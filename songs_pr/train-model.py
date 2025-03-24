@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, learning_curve
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import RandomForestRegressor
 
 df = pd.read_csv('spotify-2023.csv', encoding='latin1')
 df['streams'] = pd.to_numeric(df['streams'].str.replace(',', ''), errors='coerce')
@@ -26,3 +27,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
+
+model = RandomForestRegressor(
+    n_estimators=200,
+    max_depth=10,
+    min_samples_split=5,
+    min_samples_leaf=2,
+    random_state=42
+)
+
+cv_scores = cross_val_score(model, X_train_scaled, y_train, cv=5)
+print("\nCross-validation R² scores:", cv_scores)
+print("Mean CV R² score:", cv_scores.mean())
+print("CV score std:", cv_scores.std())
+
+model.fit(X_train_scaled, y_train)
