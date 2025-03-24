@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, learning_curve
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 df = pd.read_csv('spotify-2023.csv', encoding='latin1')
 df['streams'] = pd.to_numeric(df['streams'].str.replace(',', ''), errors='coerce')
@@ -22,3 +22,7 @@ numerical_features = ['bpm', 'danceability_%', 'valence_%', 'energy_%',
 X = df[numerical_features].fillna(0)
 y = df['log_streams'].fillna(df['log_streams'].mean())
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
