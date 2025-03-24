@@ -109,3 +109,69 @@ plt.close()
 
 print("\nTop 5 Most Important Features:")
 print(feature_importance.head().to_string())
+
+def plot_training_progress(model, X_train_scaled, y_train):
+    n_estimators = model.n_estimators
+    train_scores = []
+    oob_scores = []
+    
+    for i in range(1, n_estimators + 1, 10):
+        rf = RandomForestRegressor(
+            n_estimators=i,
+            max_depth=model.max_depth,
+            min_samples_split=model.min_samples_split,
+            min_samples_leaf=model.min_samples_leaf,
+            random_state=42,
+            oob_score=True
+        )
+        rf.fit(X_train_scaled, y_train)
+        train_score = rf.score(X_train_scaled, y_train)
+        oob_score = rf.oob_score_
+        
+        train_scores.append(train_score)
+        oob_scores.append(oob_score)
+    
+    plt.figure(figsize=(12, 6))
+    
+    plt.subplot(1, 2, 1)
+    x_range = range(1, n_estimators + 1, 10)
+    plt.plot(x_range, train_scores, label='Training R²', marker='o')
+    plt.plot(x_range, oob_scores, label='Out-of-Bag R²', marker='s')
+    plt.xlabel('Number of Trees')
+    plt.ylabel('R² Score')
+    plt.title('Model Performance vs Number of Trees')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.subplot(1, 2, 2)
+    train_sizes = np.linspace(0.1, 1.0, 10)
+    train_sizes, train_scores_cv, test_scores_cv = learning_curve(
+        model, X_train_scaled, y_train,
+        train_sizes=train_sizes,
+        cv=5,
+        scoring='r2',
+        n_jobs=-1
+    )
+    
+    train_mean = np.mean(train_scores_cv, axis=1)
+    train_std = np.std(train_scores_cv, axis=1)
+    test_mean = np.mean(test_scores_cv, axis=1)
+    test_std = np.std(test_scores_cv, axis=1)
+    
+    plt.plot(train_sizes, train_mean, label='Training Score', marker='o')
+    plt.plot(train_sizes, test_mean, label='Cross-validation Score', marker='s')
+    plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.15)
+    plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.15)
+    plt.xlabel('Training Examples')
+    plt.ylabel('R² Score')
+    plt.title('Learning Curves')
+    plt.legend(loc='lower right')
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.savefig('training_progress.png')
+    plt.close()
+
+print("\nGenerating training progress plots...")
+plot_training_progress(model, X_train_scaled, y_train)
+print("Training progress plots have been saved as 'training_progress.png'")
