@@ -175,3 +175,47 @@ def plot_training_progress(model, X_train_scaled, y_train):
 print("\nGenerating training progress plots...")
 plot_training_progress(model, X_train_scaled, y_train)
 print("Training progress plots have been saved as 'training_progress.png'")
+
+plt.figure(figsize=(20, 15))
+
+plt.subplot(2, 2, 1)
+plt.scatter(y_test_original, test_predictions_original, alpha=0.5)
+plt.plot([y_test_original.min(), y_test_original.max()], 
+         [y_test_original.min(), y_test_original.max()], 
+         'r--', lw=2)
+plt.xlabel('Actual Streams')
+plt.ylabel('Predicted Streams')
+plt.title('Actual vs Predicted Streams')
+plt.xscale('log')
+plt.yscale('log')
+
+plt.subplot(2, 2, 2)
+feature_importance = pd.DataFrame({
+    'feature': numerical_features,
+    'importance': model.feature_importances_
+})
+feature_importance = feature_importance.sort_values('importance', ascending=True)
+plt.barh(feature_importance['feature'], feature_importance['importance'])
+plt.xlabel('Importance')
+plt.title('Feature Importance')
+
+plt.subplot(2, 2, 3)
+residuals = y_test_original - test_predictions_original
+plt.scatter(test_predictions_original, residuals, alpha=0.5)
+plt.xlabel('Predicted Streams')
+plt.ylabel('Residuals')
+plt.title('Residuals Plot')
+plt.xscale('log')
+plt.axhline(y=0, color='r', linestyle='--')
+
+plt.subplot(2, 2, 4)
+sns.histplot(residuals, kde=True)
+plt.xlabel('Residual Value')
+plt.ylabel('Count')
+plt.title('Distribution of Residuals')
+
+plt.tight_layout()
+plt.savefig('model_performance_plots.png')
+plt.close()
+
+print("\nVisualization plots have been saved as 'model_performance_plots.png'")
