@@ -3,6 +3,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, learning_curve
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 df = pd.read_csv('spotify-2023.csv', encoding='latin1')
 df['streams'] = pd.to_numeric(df['streams'].str.replace(',', ''), errors='coerce')
@@ -42,3 +45,67 @@ print("Mean CV R² score:", cv_scores.mean())
 print("CV score std:", cv_scores.std())
 
 model.fit(X_train_scaled, y_train)
+
+train_predictions = model.predict(X_train_scaled)
+test_predictions = model.predict(X_test_scaled)
+train_predictions_original = np.expm1(train_predictions)
+test_predictions_original = np.expm1(test_predictions)
+y_train_original = np.expm1(y_train)
+y_test_original = np.expm1(y_test)
+
+def calculate_metrics(y_true, y_pred):
+    mse = mean_squared_error(y_true, y_pred)
+    rmse = np.sqrt(mse)
+    mae = mean_absolute_error(y_true, y_pred)
+    mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+    r2 = r2_score(y_true, y_pred)
+    return {
+        'MSE': mse,
+        'RMSE': rmse,
+        'MAE': mae,
+        'MAPE': mape,
+        'R²': r2
+    }
+
+train_metrics = calculate_metrics(y_train_original, train_predictions_original)
+test_metrics = calculate_metrics(y_test_original, test_predictions_original)
+
+print("\nTraining Set Metrics:")
+for metric, value in train_metrics.items():
+    if metric == 'MAPE':
+        print(f"{metric}: {value:.2f}%")
+    else:
+        print(f"{metric}: {value:,.2f}")
+
+print("\nTest Set Metrics:")
+for metric, value in test_metrics.items():
+    if metric == 'MAPE':
+        print(f"{metric}: {value:.2f}%")
+    else:
+        print(f"{metric}: {value:,.2f}")
+
+feature_importance = pd.DataFrame({
+    'feature': numerical_features,
+    'importance': model.feature_importances_
+})
+feature_importance = feature_importance.sort_values('importance', ascending=False)
+
+plt.figure(figsize=(12, 6))
+sns.barplot(x='importance', y='feature', data=feature_importance)
+plt.title('Feature Importance')
+plt.tight_layout()
+plt.savefig('feature_importance.png')
+plt.close()
+
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test, test_predictions, alpha=0.5)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+plt.xlabel('Actual Log Streams')
+plt.ylabel('Predicted Log Streams')
+plt.title('Actual vs Predicted Streams (Log Scale)')
+plt.tight_layout()
+plt.savefig('prediction_scatter.png')
+plt.close()
+
+print("\nTop 5 Most Important Features:")
+print(feature_importance.head().to_string())
